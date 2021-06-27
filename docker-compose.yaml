@@ -1,0 +1,35 @@
+version: '2.3'
+
+
+services:
+  metadb:
+    image: postgres:11.12-alpine
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+    ports:
+      - "5004:5432"
+
+  staging:
+    image: postgres:11.12-alpine
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+    ports:
+      - "5005:5432"
+    volumes:
+      - ./docker/init-staging.sql:/docker-entrypoint-initdb.d/init-staging.sql
+
+  airflow:
+    build:
+      context: .
+    environment:
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@metadb:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    depends_on:
+      - metadb
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+    command: run-airflow
